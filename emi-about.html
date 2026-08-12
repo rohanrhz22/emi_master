@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>EMI Master — Features & Roadmap</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
+<style>
+:root {
+  --bg: #0a0e1a; --bg2: #111827; --card: #1a2235; --card2: #1f2a40; --card3: #243049;
+  --accent: #6366f1; --accent2: #8b5cf6; --accent-glow: rgba(99,102,241,0.3);
+  --good: #10b981; --warn: #f59e0b; --bad: #ef4444;
+  --txt: #f1f5f9; --txt2: #cbd5e1; --muted: #64748b; --line: #2d3a50;
+  --gradient1: linear-gradient(135deg, #6366f1, #8b5cf6);
+  --radius: 16px;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+body {
+  font-family: 'Inter', system-ui, sans-serif;
+  background: var(--bg); color: var(--txt); line-height: 1.6; overflow-x: hidden;
+}
+
+/* NAVBAR */
+.navbar {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 1000;
+  background: rgba(10,14,26,0.85); backdrop-filter: blur(20px);
+  border-bottom: 1px solid var(--line); padding: 14px 32px;
+  display: flex; align-items: center; justify-content: space-between;
+}
+.nav-brand { display: flex; align-items: center; gap: 12px; text-decoration: none; }
+.nav-logo {
+  width: 42px; height: 42px; border-radius: 12px; background: var(--gradient1);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.3rem; font-weight: 800; color: white;
+  box-shadow: 0 4px 16px var(--accent-glow);
+}
+.nav-title {
+  font-family: 'Space Grotesk', sans-serif; font-size: 1.4rem; font-weight: 700;
+  background: var(--gradient1); -webkit-background-clip: text; background-clip: text; color: transparent;
+}
+.nav-links { display: flex; gap: 8px; }
+.nav-links a {
+  color: var(--txt2); text-decoration: none; padding: 8px 16px;
+  border-radius: 8px; font-size: 0.88rem; font-weight: 500; transition: all 0.3s;
+}
+.nav-links a:hover, .nav-links a.active { background: var(--card2); color: var(--accent); }
+
+/* PAGE HEADER */
+.page-header {
+  padding: 120px 32px 60px; text-align: center; position: relative; overflow: hidden;
+}
+.page-header::before {
+  content: ''; position: absolute; top: -50%; left: -50%; width: 200%; height: 200%;
+  background: radial-gradient(ellipse at center, rgba(99,102,241,0.08) 0%, transparent 60%);
+}
+.page-header h1 {
+  font-family: 'Space Grotesk', sans-serif; font-size: 3rem; font-weight: 800;
+  position: relative; z-index: 1;
+}
+.page-header h1 span {
+  background: var(--gradient1); -webkit-background-clip: text; background-clip: text; color: transparent;
+}
+.page-header p { color: var(--txt2); font-size: 1.1rem; margin-top: 12px; position: relative; z-index: 1; }
+
+/* SECTIONS */
+.section { padding: 80px 32px; max-width: 1200px; margin: 0 auto; }
+.section-title {
+  font-family: 'Space Grotesk', sans-serif; font-size: 2.2rem; font-weight: 700;
+  text-align: center; margin-bottom: 12px;
+}
+.section-sub { text-align: center; color: var(--muted); margin-bottom: 48px; font-size: 1.05rem; }
+
+/* FEATURES GRID */
+.features-grid {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 24px;
+}
+.feature-card {
+  background: var(--card); border: 1px solid var(--line);
+  border-radius: var(--radius); padding: 32px;
+  transition: all 0.3s; position: relative; overflow: hidden;
+}
+.feature-card:hover {
+  transform: translateY(-4px); border-color: var(--accent);
+  box-shadow: 0 12px 40px rgba(99,102,241,0.15);
+}
+.feature-icon {
+  width: 56px; height: 56px; border-radius: 14px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.4rem; margin-bottom: 18px;
+}
+.feature-card h3 { font-size: 1.15rem; margin-bottom: 8px; }
+.feature-card p { color: var(--txt2); font-size: 0.92rem; }
+
+/* PHASES */
+.phases-section { background: var(--bg2); padding: 80px 32px; border-top: 1px solid var(--line); }
+.phases-container { max-width: 1200px; margin: 0 auto; }
+.phases {
+  display: flex; justify-content: center; gap: 0; margin: 48px auto;
+  max-width: 900px; position: relative;
+}
+.phase { flex: 1; text-align: center; position: relative; padding: 0 8px; }
+.phase-num {
+  width: 40px; height: 40px; border-radius: 50%;
+  background: var(--card2); border: 2px solid var(--line);
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 700; font-size: 0.9rem; margin: 0 auto 10px;
+  position: relative; z-index: 1;
+}
+.phase.active .phase-num { background: var(--accent); border-color: var(--accent); color: white; }
+.phase.done .phase-num { background: var(--good); border-color: var(--good); color: white; }
+.phase-label { font-size: 0.78rem; color: var(--muted); }
+.phase.active .phase-label { color: var(--accent); font-weight: 600; }
+.phases::before {
+  content: ''; position: absolute; top: 20px; left: 60px; right: 60px;
+  height: 2px; background: var(--line); z-index: 0;
+}
+
+/* CTA */
+.cta-section { padding: 80px 32px; text-align: center; }
+.btn {
+  padding: 14px 28px; border-radius: 12px; font-size: 0.95rem;
+  font-weight: 600; text-decoration: none; cursor: pointer;
+  border: none; transition: all 0.3s; display: inline-flex; align-items: center; gap: 8px;
+}
+.btn-primary {
+  background: var(--gradient1); color: white;
+  box-shadow: 0 6px 24px var(--accent-glow);
+}
+.btn-primary:hover { transform: translateY(-2px); box-shadow: 0 8px 32px var(--accent-glow); }
+
+/* FOOTER */
+.footer {
+  background: var(--card); border-top: 1px solid var(--line);
+  padding: 48px 32px; text-align: center;
+}
+.footer-brand { font-family: 'Space Grotesk'; font-size: 1.3rem; font-weight: 700; margin-bottom: 8px; }
+.footer p { color: var(--muted); font-size: 0.88rem; }
+
+/* ARCHITECTURE */
+.arch-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 24px; margin-top: 40px; }
+.arch-card {
+  background: var(--card); border: 1px solid var(--line);
+  border-radius: var(--radius); padding: 28px; position: relative; overflow: hidden;
+}
+.arch-card::before {
+  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+}
+.arch-card.done::before { background: linear-gradient(90deg, #10b981, #06b6d4); }
+.arch-card.active::before { background: var(--gradient1); }
+.arch-card.pending::before { background: linear-gradient(90deg, var(--card3), var(--muted)); }
+.arch-card h4 { font-size: 1.05rem; margin-bottom: 10px; display: flex; align-items: center; gap: 10px; }
+.arch-card p { color: var(--txt2); font-size: 0.9rem; margin-bottom: 12px; }
+.arch-tech { display: flex; flex-wrap: wrap; gap: 6px; }
+.arch-tech span {
+  padding: 3px 10px; border-radius: 6px; font-size: 0.72rem; font-weight: 600;
+  background: var(--card2); color: var(--muted); border: 1px solid var(--line);
+}
+
+@media (max-width: 768px) {
+  .page-header h1 { font-size: 2rem; }
+  .navbar { padding: 12px 16px; }
+  .nav-links { display: none; }
+  .section, .phases-section, .cta-section { padding: 48px 16px; }
+}
+
+::-webkit-scrollbar { width: 8px; }
+::-webkit-scrollbar-track { background: var(--bg); }
+::-webkit-scrollbar-thumb { background: var(--card2); border-radius: 4px; }
+</style>
+</head>
+<body>
+
+<!-- NAVBAR -->
+<nav class="navbar">
+  <a class="nav-brand" href="index.html">
+    <div class="nav-logo"><i class="fas fa-chart-pie"></i></div>
+    <span class="nav-title">EMI Master</span>
+  </a>
+  <div class="nav-links">
+    <a href="index.html">Home</a>
+    <a href="index.html#app">Analyzer</a>
+    <a href="#features" class="active">Features</a>
+    <a href="#roadmap">Roadmap</a>
+  </div>
+</nav>
+
+<!-- PAGE HEADER -->
+<div class="page-header">
+  <h1>Features & <span>Development Roadmap</span></h1>
+  <p>Everything EMI Master offers today — and what's coming next</p>
+</div>
+
+<!-- FEATURES -->
+<section class="section" id="features">
+  <h2 class="section-title">Powerful Features</h2>
+  <p class="section-sub">Everything you need to analyze, plan, and achieve debt freedom</p>
+  <div class="features-grid">
+    <div class="feature-card">
+      <div class="feature-icon" style="background:rgba(99,102,241,0.15);color:var(--accent)"><i class="fas fa-calculator"></i></div>
+      <h3>EMI Calculator</h3>
+      <p>Calculate monthly EMIs for any loan amount, interest rate, and tenure. Compare scenarios instantly.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon" style="background:rgba(16,185,129,0.15);color:var(--good)"><i class="fas fa-chart-line"></i></div>
+      <h3>Cash Flow Analysis</h3>
+      <p>See exactly where your salary goes — EMIs, expenses, savings. Visual breakdown with percentage allocation.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon" style="background:rgba(245,158,11,0.15);color:var(--warn)"><i class="fas fa-road"></i></div>
+      <h3>Debt-Free Timeline</h3>
+      <p>Month-by-month timeline showing when each loan ends and how your free cash grows over time.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon" style="background:rgba(239,68,68,0.15);color:var(--bad)"><i class="fas fa-bullseye"></i></div>
+      <h3>Smart Strategies</h3>
+      <p>Avalanche vs Snowball comparison. Get personalized recommendations based on your loan portfolio.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon" style="background:rgba(139,92,246,0.15);color:var(--accent2)"><i class="fas fa-chart-pie"></i></div>
+      <h3>Visual Dashboard</h3>
+      <p>Beautiful charts, progress bars, and donut graphs to visualize your financial health at a glance.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon" style="background:rgba(6,182,212,0.15);color:#06b6d4"><i class="fas fa-lightbulb"></i></div>
+      <h3>Action Plans</h3>
+      <p>Phase-wise recommendations: survive tight months, optimize when cash frees up, and accelerate payoff.</p>
+    </div>
+  </div>
+</section>
+
+<!-- DEVELOPMENT ROADMAP -->
+<section class="phases-section" id="roadmap">
+  <div class="phases-container">
+    <h2 class="section-title">Development Roadmap</h2>
+    <p class="section-sub">Complete architecture phases for the EMI Master application</p>
+
+    <div class="phases">
+      <div class="phase done"><div class="phase-num">1</div><div class="phase-label">UI/UX Design</div></div>
+      <div class="phase done"><div class="phase-num">2</div><div class="phase-label">Core Engine</div></div>
+      <div class="phase active"><div class="phase-num">3</div><div class="phase-label">Analytics</div></div>
+      <div class="phase"><div class="phase-num">4</div><div class="phase-label">Reports</div></div>
+      <div class="phase"><div class="phase-num">5</div><div class="phase-label">Cloud Sync</div></div>
+      <div class="phase"><div class="phase-num">6</div><div class="phase-label">AI</div></div>
+    </div>
+
+    <div class="arch-grid">
+      <div class="arch-card done">
+        <h4 style="color:var(--good)"><i class="fas fa-check-circle"></i> Phase 1: UI/UX Foundation</h4>
+        <p>Responsive design, dark theme, glassmorphism, smooth animations, mobile-first layout, navigation system, modal dialogs.</p>
+        <div class="arch-tech">
+          <span>HTML5</span><span>CSS3</span><span>CSS Grid</span><span>Flexbox</span><span>Animations</span><span>Responsive</span>
+        </div>
+      </div>
+      <div class="arch-card done">
+        <h4 style="color:var(--good)"><i class="fas fa-check-circle"></i> Phase 2: Core Calculation Engine</h4>
+        <p>EMI formula engine, amortization schedule, loan CRUD operations, localStorage persistence, interest computation, data input forms.</p>
+        <div class="arch-tech">
+          <span>JavaScript</span><span>LocalStorage</span><span>EMI Formula</span><span>JSON</span><span>DOM API</span>
+        </div>
+      </div>
+      <div class="arch-card active">
+        <h4 style="color:var(--accent)"><i class="fas fa-spinner fa-spin"></i> Phase 3: Analytics & Visualization</h4>
+        <p>Interactive SVG donut charts, bar charts, timeline generation, cash-flow projections, debt-free date calculator, KPI dashboard.</p>
+        <div class="arch-tech">
+          <span>SVG Charts</span><span>Dynamic DOM</span><span>Data Aggregation</span><span>Projections</span>
+        </div>
+      </div>
+      <div class="arch-card pending">
+        <h4><i class="fas fa-clock"></i> Phase 4: Reports & Export</h4>
+        <p>PDF report generation, Excel export, shareable links, print-friendly views, summary snapshots, email reports.</p>
+        <div class="arch-tech">
+          <span>jsPDF</span><span>SheetJS</span><span>Print CSS</span><span>Blob API</span>
+        </div>
+      </div>
+      <div class="arch-card pending">
+        <h4><i class="fas fa-clock"></i> Phase 5: Cloud & Accounts</h4>
+        <p>User accounts, cloud data sync, multi-device access, historical tracking, notifications for EMI due dates.</p>
+        <div class="arch-tech">
+          <span>Firebase</span><span>Auth</span><span>Firestore</span><span>PWA</span><span>Push Notifications</span>
+        </div>
+      </div>
+      <div class="arch-card pending">
+        <h4><i class="fas fa-clock"></i> Phase 6: AI Insights</h4>
+        <p>AI-powered recommendations, forecasting, auto-detect optimal payoff strategy, budget anomaly alerts, spending pattern analysis.</p>
+        <div class="arch-tech">
+          <span>ML Models</span><span>Forecasting</span><span>NLP</span><span>Anomaly Detection</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ARCHITECTURE OVERVIEW -->
+<section class="section">
+  <h2 class="section-title">System Architecture</h2>
+  <p class="section-sub">How EMI Master is structured under the hood</p>
+  <div class="features-grid">
+    <div class="feature-card">
+      <div class="feature-icon" style="background:rgba(99,102,241,0.15);color:var(--accent)"><i class="fas fa-layer-group"></i></div>
+      <h3>Presentation Layer</h3>
+      <p>Responsive HTML/CSS with dark theme, glassmorphism effects, tab-based navigation, and smooth animations. Works on all screen sizes.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon" style="background:rgba(16,185,129,0.15);color:var(--good)"><i class="fas fa-cogs"></i></div>
+      <h3>Business Logic Layer</h3>
+      <p>Pure JavaScript engine handling EMI calculations, amortization schedules, timeline projections, and strategy recommendations.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon" style="background:rgba(245,158,11,0.15);color:var(--warn)"><i class="fas fa-database"></i></div>
+      <h3>Data Layer</h3>
+      <p>LocalStorage-based persistence with JSON serialization. Planned upgrade to Firebase/IndexedDB for cloud sync and offline support.</p>
+    </div>
+  </div>
+</section>
+
+<!-- CTA -->
+<section class="cta-section">
+  <h2 class="section-title">Ready to Analyze?</h2>
+  <p style="color:var(--muted);margin-bottom:32px;font-size:1.05rem">Start entering your EMI data and get instant insights</p>
+  <a href="index.html#app" class="btn btn-primary" style="padding:16px 40px;font-size:1.05rem">
+    <i class="fas fa-rocket"></i> Open EMI Analyzer
+  </a>
+</section>
+
+<!-- FOOTER -->
+<footer class="footer">
+  <div class="footer-brand">EMI Master</div>
+  <p>Smart Debt Analysis & Freedom Planning Tool</p>
+  <p style="margin-top:8px;font-size:0.78rem">Built for personal financial planning · All calculations are indicative</p>
+</footer>
+
+</body>
+</html>

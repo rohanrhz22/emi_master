@@ -75,6 +75,21 @@ body {
 .nav-links a:hover, .nav-links a.active {
   background: var(--card2); color: var(--accent);
 }
+.nav-toggle {
+  display: none; background: none; border: none; color: var(--txt);
+  font-size: 1.3rem; cursor: pointer; padding: 4px 8px;
+}
+.mobile-menu {
+  display: none; flex-direction: column; gap: 4px;
+  background: var(--card); border-bottom: 1px solid var(--line);
+  padding: 12px 16px;
+}
+.mobile-menu.open { display: flex; }
+.mobile-menu a {
+  color: var(--txt2); text-decoration: none; padding: 10px 14px;
+  border-radius: 8px; font-size: 0.9rem; font-weight: 500; transition: all 0.2s;
+}
+.mobile-menu a:hover, .mobile-menu a.active { background: var(--card2); color: var(--accent); }
 
 /* HERO */
 .hero {
@@ -242,7 +257,7 @@ body {
 .chart-title { font-size: 1rem; font-weight: 600; margin-bottom: 16px; }
 .bar-chart { display: flex; flex-direction: column; gap: 12px; }
 .bar-row { display: flex; align-items: center; gap: 12px; }
-.bar-label { width: 130px; font-size: 0.85rem; color: var(--txt2); flex-shrink: 0; }
+.bar-label { width: 100px; font-size: 0.82rem; color: var(--txt2); flex-shrink: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .bar-track {
   flex: 1; height: 32px; background: var(--card2);
   border-radius: 8px; overflow: hidden; position: relative;
@@ -329,15 +344,36 @@ body {
 /* RESPONSIVE */
 @media (max-width: 768px) {
   .hero h1 { font-size: 2.2rem; }
-  .dash-grid { grid-template-columns: repeat(2, 1fr); }
+  .hero p { font-size: 1rem; }
+  .hero { padding: 90px 16px 32px; }
+  .dash-grid { grid-template-columns: repeat(2, 1fr) !important; }
   .navbar { padding: 12px 16px; }
   .nav-links { display: none; }
+  .nav-toggle { display: block; }
   .section { padding: 48px 16px; }
-  .donut-wrapper { flex-direction: column; }
+  .app-section { padding: 48px 16px; }
+  .donut-wrapper { flex-direction: column; gap: 20px; }
+  .kpi-value { font-size: 1.4rem; }
+  .tabs { border-radius: 10px; }
+  .tab { padding: 10px 14px; font-size: 0.8rem; }
+  .emi-item { flex-wrap: wrap; gap: 10px; }
+  .emi-item-info { flex: 1; min-width: 0; }
+  .emi-item-name { font-size: 0.88rem; }
+  .emi-item-details { font-size: 0.75rem; white-space: normal; }
+  .bar-label { width: 80px; font-size: 0.75rem; }
+  .chart-container { padding: 16px; }
+  .modal { padding: 20px; }
+  .phases { flex-wrap: wrap; gap: 16px; }
+  .phases::before { display: none; }
 }
 @media (max-width: 480px) {
-  .dash-grid { grid-template-columns: 1fr; }
-  .hero h1 { font-size: 1.8rem; }
+  .dash-grid { grid-template-columns: 1fr !important; }
+  .hero h1 { font-size: 1.7rem; }
+  .section-title { font-size: 1.6rem; }
+  .kpi-value { font-size: 1.3rem; }
+  .bar-label { width: 70px; }
+  .hero-btns { flex-direction: column; align-items: center; }
+  .btn { width: 100%; max-width: 280px; justify-content: center; }
 }
 
 /* MODAL */
@@ -407,7 +443,13 @@ body {
     <a href="#app">Analyzer</a>
     <a href="emi-about.html">Features & Roadmap</a>
   </div>
+  <button class="nav-toggle" onclick="toggleMobileMenu()" aria-label="Menu"><i class="fas fa-bars"></i></button>
 </nav>
+<div class="mobile-menu" id="mobileMenu">
+  <a href="#home" onclick="closeMobileMenu()">Home</a>
+  <a href="#app" onclick="closeMobileMenu()">Analyzer</a>
+  <a href="emi-about.html">Features & Roadmap</a>
+</div>
 
 <!-- HERO -->
 <section class="hero" id="home">
@@ -1244,6 +1286,14 @@ document.querySelectorAll('.nav-links a').forEach(a => {
 document.getElementById('emiModal').addEventListener('click', function(e) {
   if (e.target === this) closeModal();
 });
+
+// Mobile menu
+function toggleMobileMenu() {
+  document.getElementById('mobileMenu').classList.toggle('open');
+}
+function closeMobileMenu() {
+  document.getElementById('mobileMenu').classList.remove('open');
+}
 
 // Init
 loadState();

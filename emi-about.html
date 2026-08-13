@@ -46,6 +46,20 @@ body {
   border-radius: 8px; font-size: 0.88rem; font-weight: 500; transition: all 0.3s;
 }
 .nav-links a:hover, .nav-links a.active { background: var(--card2); color: var(--accent); }
+.nav-toggle {
+  display: none; background: none; border: none; color: var(--txt);
+  font-size: 1.3rem; cursor: pointer; padding: 4px 8px;
+}
+.mobile-menu {
+  display: none; flex-direction: column; gap: 4px;
+  background: var(--card); border-bottom: 1px solid var(--line); padding: 12px 16px;
+}
+.mobile-menu.open { display: flex; }
+.mobile-menu a {
+  color: var(--txt2); text-decoration: none; padding: 10px 14px;
+  border-radius: 8px; font-size: 0.9rem; font-weight: 500; transition: all 0.2s;
+}
+.mobile-menu a:hover, .mobile-menu a.active { background: var(--card2); color: var(--accent); }
 
 /* PAGE HEADER */
 .page-header {
@@ -160,9 +174,14 @@ body {
 
 @media (max-width: 768px) {
   .page-header h1 { font-size: 2rem; }
+  .page-header { padding: 90px 16px 40px; }
   .navbar { padding: 12px 16px; }
   .nav-links { display: none; }
+  .nav-toggle { display: block; }
   .section, .phases-section, .cta-section { padding: 48px 16px; }
+  .phases { flex-wrap: wrap; gap: 16px; }
+  .phases::before { display: none; }
+  .section-title { font-size: 1.7rem; }
 }
 
 ::-webkit-scrollbar { width: 8px; }
@@ -184,7 +203,14 @@ body {
     <a href="#features" class="active">Features</a>
     <a href="#roadmap">Roadmap</a>
   </div>
+  <button class="nav-toggle" onclick="document.getElementById('mobileMenu').classList.toggle('open')" aria-label="Menu"><i class="fas fa-bars"></i></button>
 </nav>
+<div class="mobile-menu" id="mobileMenu">
+  <a href="index.html">Home</a>
+  <a href="index.html#app">Analyzer</a>
+  <a href="#features" onclick="document.getElementById('mobileMenu').classList.remove('open')">Features</a>
+  <a href="#roadmap" onclick="document.getElementById('mobileMenu').classList.remove('open')">Roadmap</a>
+</div>
 
 <!-- PAGE HEADER -->
 <div class="page-header">

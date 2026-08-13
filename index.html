@@ -430,6 +430,7 @@ body {
     <!-- TABS -->
     <div class="tabs">
       <button class="tab active" onclick="switchTab('input')"><i class="fas fa-edit"></i>&nbsp; Input Data</button>
+      <button class="tab" onclick="switchTab('calculator')"><i class="fas fa-calculator"></i>&nbsp; EMI Calculator</button>
       <button class="tab" onclick="switchTab('dashboard')"><i class="fas fa-tachometer-alt"></i>&nbsp; Dashboard</button>
       <button class="tab" onclick="switchTab('timeline')"><i class="fas fa-calendar-alt"></i>&nbsp; Timeline</button>
       <button class="tab" onclick="switchTab('strategy')"><i class="fas fa-chess"></i>&nbsp; Strategy</button>
@@ -482,6 +483,37 @@ body {
       </div>
     </div>
 
+    <!-- TAB: EMI CALCULATOR -->
+    <div class="tab-content" id="tab-calculator">
+      <div class="chart-container">
+        <div class="chart-title"><i class="fas fa-calculator"></i> EMI Calculator</div>
+        <p style="color:var(--muted);font-size:0.88rem;margin-bottom:16px">Calculate monthly EMI before taking a new loan</p>
+        <div class="form-grid">
+          <div class="form-group"><label>Loan Amount (₹)</label><input type="number" id="calcPrincipal" placeholder="e.g. 500000"></div>
+          <div class="form-group"><label>Interest Rate (% p.a.)</label><input type="number" id="calcRate" placeholder="e.g. 12" step="0.1"></div>
+          <div class="form-group"><label>Tenure (Months)</label><input type="number" id="calcTenure" placeholder="e.g. 36"></div>
+          <div class="form-group" style="display:flex;align-items:flex-end"><button class="btn btn-primary" onclick="calculateEmi()" style="width:100%;justify-content:center"><i class="fas fa-calculator"></i> Calculate</button></div>
+        </div>
+      </div>
+      <div id="calcResult" style="display:none">
+        <div class="dash-grid" style="grid-template-columns:repeat(4,1fr);margin-bottom:24px" id="calcKpis"></div>
+        <div class="chart-container">
+          <div class="chart-title">Payment Breakdown</div>
+          <div class="donut-wrapper">
+            <svg class="donut-svg" viewBox="0 0 42 42" id="calcDonut"></svg>
+            <div class="donut-legend" id="calcLegend"></div>
+          </div>
+        </div>
+        <div class="chart-container">
+          <div class="chart-title"><i class="fas fa-exchange-alt"></i> Yearly Amortization</div>
+          <div style="overflow-x:auto"><table class="data-table" id="calcAmortTable"></table></div>
+        </div>
+        <div style="text-align:center;margin-top:16px">
+          <button class="btn btn-outline" onclick="addCalcAsEmi()" style="padding:10px 24px"><i class="fas fa-plus"></i> Add This as EMI</button>
+        </div>
+      </div>
+    </div>
+
     <!-- TAB: DASHBOARD -->
     <div class="tab-content" id="tab-dashboard">
       <div class="dash-grid" id="kpiGrid"></div>
@@ -513,6 +545,15 @@ body {
 
     <!-- TAB: STRATEGY -->
     <div class="tab-content" id="tab-strategy">
+      <div class="chart-container" id="prepaySection">
+        <div class="chart-title"><i class="fas fa-forward"></i> Prepayment Simulator</div>
+        <p style="color:var(--muted);font-size:0.88rem;margin-bottom:14px">See how paying extra each month saves interest and reduces tenure</p>
+        <div class="form-grid" style="margin-bottom:16px">
+          <div class="form-group"><label>Extra Monthly Payment (₹)</label><input type="number" id="prepayAmount" placeholder="e.g. 5000" value="5000"></div>
+          <div class="form-group" style="display:flex;align-items:flex-end"><button class="btn btn-primary" onclick="simulatePrepay()" style="width:100%;justify-content:center"><i class="fas fa-bolt"></i> Simulate</button></div>
+        </div>
+        <div id="prepayResult"></div>
+      </div>
       <div class="tips-grid" id="strategyCards"></div>
     </div>
 
@@ -539,6 +580,7 @@ body {
 
     <!-- TAB: DETAILS -->
     <div class="tab-content" id="tab-details">
+      <div class="dash-grid" style="grid-template-columns:repeat(3,1fr);margin-bottom:24px" id="detailKpis"></div>
       <div class="chart-container" style="padding:0;overflow:hidden">
         <table class="data-table" id="detailsTable"></table>
       </div>
@@ -932,25 +974,149 @@ function generateStrategy() {
 
 function generateDetails() {
   const totalEmi = emis.reduce((s, e) => s + e.amount, 0);
-  const totalDebt = emis.reduce((s, e) => s + e.amount * e.pending, 0);
+  let grandTotalPayable = 0, grandTotalInterest = 0, grandPrincipal = 0;
 
-  let rows = emis.map(e => `
-    <tr>
+  let rows = emis.map(e => {
+    const totalPayable = e.amount * e.pending;
+    const principal = calcPrincipalFromEmi(e.amount, e.rate, e.pending);
+    const interest = totalPayable - principal;
+    grandTotalPayable += totalPayable;
+    grandTotalInterest += interest;
+    grandPrincipal += principal;
+    return `<tr>
       <td>${escapeHtml(e.name)}</td>
-      <td>${e.type}</td>
       <td class="num">₹${e.amount.toLocaleString('en-IN')}</td>
       <td class="num">${e.pending}</td>
       <td>${getEndDate(e.pending)}</td>
       <td class="num">${e.rate ? e.rate + '%' : '—'}</td>
-      <td class="num">₹${(e.amount * e.pending).toLocaleString('en-IN')}</td>
-    </tr>
-  `).join('');
+      <td class="num">₹${principal.toLocaleString('en-IN')}</td>
+      <td class="num" style="color:var(--bad)">₹${interest.toLocaleString('en-IN')}</td>
+      <td class="num">₹${totalPayable.toLocaleString('en-IN')}</td>
+    </tr>`;
+  }).join('');
+
+  document.getElementById('detailKpis').innerHTML = `
+    <div class="kpi-card accent"><div class="kpi-label">Total Payable</div><div class="kpi-value" style="color:var(--accent)">₹${grandTotalPayable.toLocaleString('en-IN')}</div></div>
+    <div class="kpi-card good"><div class="kpi-label">Principal</div><div class="kpi-value" style="color:var(--good)">₹${grandPrincipal.toLocaleString('en-IN')}</div></div>
+    <div class="kpi-card bad"><div class="kpi-label">Total Interest</div><div class="kpi-value" style="color:var(--bad)">₹${grandTotalInterest.toLocaleString('en-IN')}</div></div>
+  `;
 
   document.getElementById('detailsTable').innerHTML = `
-    <thead><tr><th>Loan</th><th>Type</th><th class="num">Monthly</th><th class="num">Pending</th><th>Ends</th><th class="num">Rate</th><th class="num">Total Left</th></tr></thead>
+    <thead><tr><th>Loan</th><th class="num">Monthly</th><th class="num">Months</th><th>Ends</th><th class="num">Rate</th><th class="num">Principal</th><th class="num">Interest</th><th class="num">Total</th></tr></thead>
     <tbody>${rows}</tbody>
-    <tfoot><tr><td colspan="2">TOTAL</td><td class="num">₹${totalEmi.toLocaleString('en-IN')}</td><td>—</td><td>${getEndDate(Math.max(...emis.map(e => e.pending)))}</td><td>—</td><td class="num">₹${totalDebt.toLocaleString('en-IN')}</td></tr></tfoot>
+    <tfoot><tr><td>TOTAL</td><td class="num">₹${totalEmi.toLocaleString('en-IN')}</td><td>—</td><td>${getEndDate(Math.max(...emis.map(e => e.pending)))}</td><td>—</td><td class="num">₹${grandPrincipal.toLocaleString('en-IN')}</td><td class="num">₹${grandTotalInterest.toLocaleString('en-IN')}</td><td class="num">₹${grandTotalPayable.toLocaleString('en-IN')}</td></tr></tfoot>
   `;
+}
+
+function calcPrincipalFromEmi(emi, ratePA, months) {
+  if (!ratePA || ratePA === 0) return emi * months;
+  const r = ratePA / 12 / 100;
+  return Math.round(emi * (1 - Math.pow(1 + r, -months)) / r);
+}
+
+// ===== EMI CALCULATOR =====
+let lastCalc = {};
+function calculateEmi() {
+  const P = +document.getElementById('calcPrincipal').value;
+  const ratePA = +document.getElementById('calcRate').value;
+  const N = +document.getElementById('calcTenure').value;
+  if (!P || !ratePA || !N) { alert('Fill all fields.'); return; }
+  const r = ratePA / 12 / 100;
+  const emi = Math.round(P * r * Math.pow(1 + r, N) / (Math.pow(1 + r, N) - 1));
+  const totalPayable = emi * N;
+  const totalInterest = totalPayable - P;
+  lastCalc = { P, ratePA, N, emi };
+
+  document.getElementById('calcResult').style.display = 'block';
+  document.getElementById('calcKpis').innerHTML = `
+    <div class="kpi-card accent"><div class="kpi-label">Monthly EMI</div><div class="kpi-value" style="color:var(--accent)">₹${emi.toLocaleString('en-IN')}</div></div>
+    <div class="kpi-card good"><div class="kpi-label">Principal</div><div class="kpi-value" style="color:var(--good)">₹${P.toLocaleString('en-IN')}</div></div>
+    <div class="kpi-card bad"><div class="kpi-label">Total Interest</div><div class="kpi-value" style="color:var(--bad)">₹${totalInterest.toLocaleString('en-IN')}</div></div>
+    <div class="kpi-card warn"><div class="kpi-label">Total Payable</div><div class="kpi-value" style="color:var(--warn)">₹${totalPayable.toLocaleString('en-IN')}</div></div>
+  `;
+
+  // Donut
+  const svg = document.getElementById('calcDonut');
+  const legend = document.getElementById('calcLegend');
+  const segs = [{ label: 'Principal', value: P, color: '#10b981' }, { label: 'Interest', value: totalInterest, color: '#ef4444' }];
+  let offset = 25;
+  const radius = 15.915, circ = 2 * Math.PI * radius;
+  let circles = `<circle cx="21" cy="21" r="${radius}" fill="none" stroke="var(--card2)" stroke-width="4"/>`;
+  segs.forEach(s => {
+    const pct = (s.value / totalPayable) * 100;
+    const dash = (pct / 100) * circ;
+    circles += `<circle cx="21" cy="21" r="${radius}" fill="none" stroke="${s.color}" stroke-width="4" stroke-dasharray="${dash} ${circ - dash}" stroke-dashoffset="${-offset}" stroke-linecap="round"/>`;
+    offset -= (pct / 100) * circ;
+  });
+  svg.innerHTML = circles;
+  legend.innerHTML = segs.map(s => `<div class="legend-item"><div class="legend-dot" style="background:${s.color}"></div>${s.label}: ₹${s.value.toLocaleString('en-IN')} (${Math.round(s.value / totalPayable * 100)}%)</div>`).join('');
+
+  // Yearly amortization table
+  let bal = P, yearRows = '', yPrin = 0, yInt = 0;
+  for (let m = 1; m <= N; m++) {
+    const intPart = Math.round(bal * r);
+    const prinPart = emi - intPart;
+    bal = Math.max(bal - prinPart, 0);
+    yPrin += prinPart; yInt += intPart;
+    if (m % 12 === 0 || m === N) {
+      yearRows += `<tr><td class="num">${m % 12 === 0 ? 'Year ' + (m / 12) : 'Remaining'}</td><td class="num">₹${yPrin.toLocaleString('en-IN')}</td><td class="num" style="color:var(--bad)">₹${yInt.toLocaleString('en-IN')}</td><td class="num">₹${bal.toLocaleString('en-IN')}</td></tr>`;
+      yPrin = 0; yInt = 0;
+    }
+  }
+  document.getElementById('calcAmortTable').innerHTML = `<thead><tr><th>Period</th><th class="num">Principal Paid</th><th class="num">Interest Paid</th><th class="num">Balance</th></tr></thead><tbody>${yearRows}</tbody>`;
+}
+
+function addCalcAsEmi() {
+  if (!lastCalc.emi) return;
+  const name = prompt('Loan name for this EMI:');
+  if (!name) return;
+  emis.push({ name, amount: lastCalc.emi, pending: lastCalc.N, rate: lastCalc.ratePA, type: 'personal' });
+  saveState(); renderEmiList();
+  alert('Added! Switch to Input Data tab to see it.');
+}
+
+// ===== PREPAYMENT SIMULATOR =====
+function simulatePrepay() {
+  const extra = +document.getElementById('prepayAmount').value || 0;
+  if (!extra || emis.length === 0) { alert('Enter an extra payment amount and have at least one EMI.'); return; }
+
+  let html = '<div style="display:grid;grid-template-columns:1fr;gap:14px;margin-top:16px">';
+  let totalSaved = 0, totalMonthsSaved = 0;
+
+  emis.forEach(e => {
+    if (!e.rate) {
+      html += `<div class="emi-item"><div class="emi-item-info"><div class="emi-item-icon"><i class="fas ${typeIcons[e.type] || 'fa-money-bill'}"></i></div><div><div class="emi-item-name">${escapeHtml(e.name)}</div><div class="emi-item-details" style="color:var(--muted)">No interest rate — prepayment doesn't save interest</div></div></div></div>`;
+      return;
+    }
+    const r = e.rate / 12 / 100;
+    let bal = calcPrincipalFromEmi(e.amount, e.rate, e.pending);
+    let normalTotal = e.amount * e.pending;
+
+    // With prepayment
+    let bal2 = bal, months2 = 0, total2 = 0;
+    while (bal2 > 0 && months2 < e.pending * 2) {
+      const intPart = bal2 * r;
+      const prinPart = (e.amount + extra) - intPart;
+      if (prinPart <= 0) break;
+      bal2 = Math.max(bal2 - prinPart, 0);
+      total2 += Math.min(e.amount + extra, intPart + bal2 + prinPart);
+      months2++;
+    }
+    const saved = normalTotal - total2;
+    const monthsSaved = e.pending - months2;
+    totalSaved += Math.max(saved, 0);
+    totalMonthsSaved += Math.max(monthsSaved, 0);
+
+    html += `<div class="emi-item" style="flex-wrap:wrap;gap:12px">
+      <div class="emi-item-info"><div class="emi-item-icon"><i class="fas ${typeIcons[e.type] || 'fa-money-bill'}"></i></div>
+        <div><div class="emi-item-name">${escapeHtml(e.name)}</div>
+          <div class="emi-item-details">${e.pending} → <strong style="color:var(--good)">${months2} months</strong> · Save <strong style="color:var(--good)">₹${Math.max(saved, 0).toLocaleString('en-IN')}</strong> interest · ${Math.max(monthsSaved, 0)} months earlier</div></div></div>
+    </div>`;
+  });
+  html += '</div>';
+
+  html = `<div class="alert-box success" style="margin-bottom:16px"><span class="alert-icon">💰</span><div>Paying <strong>₹${extra.toLocaleString('en-IN')} extra/month</strong> across all loans saves <strong>₹${totalSaved.toLocaleString('en-IN')}</strong> in interest and finishes <strong>${totalMonthsSaved} months</strong> earlier overall.</div></div>` + html;
+  document.getElementById('prepayResult').innerHTML = html;
 }
 
 // ===== BALANCE REDUCTION =====

@@ -8,27 +8,33 @@
 <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
 <style>
 :root {
-  --bg: #0a0e1a;
-  --bg2: #111827;
-  --card: #1a2235;
-  --card2: #1f2a40;
-  --card3: #243049;
-  --accent: #6366f1;
-  --accent2: #8b5cf6;
-  --accent-glow: rgba(99,102,241,0.3);
+  --bg: #f5f7fb;
+  --bg2: #edf2f9;
+  --card: #ffffff;
+  --card2: #eef2ff;
+  --card3: #e2e8f0;
+  --accent: #4656c8;
+  --accent2: #7461cf;
+  --accent-glow: rgba(70,86,200,0.2);
   --good: #10b981;
   --good-glow: rgba(16,185,129,0.2);
   --warn: #f59e0b;
   --bad: #ef4444;
   --bad-glow: rgba(239,68,68,0.15);
-  --txt: #f1f5f9;
-  --txt2: #cbd5e1;
+  --txt: #172033;
+  --txt2: #44516a;
   --muted: #64748b;
-  --line: #2d3a50;
+  --line: #dbe3ef;
   --gradient1: linear-gradient(135deg, #6366f1, #8b5cf6);
   --gradient2: linear-gradient(135deg, #10b981, #06b6d4);
   --gradient3: linear-gradient(135deg, #f59e0b, #ef4444);
   --radius: 16px;
+  --shadow: 0 8px 32px rgba(30,41,59,0.08);
+}
+[data-theme="dark"] {
+  --bg: #0a0e1a; --bg2: #111827; --card: #1a2235; --card2: #1f2a40; --card3: #243049;
+  --accent: #818cf8; --accent2: #a78bfa; --accent-glow: rgba(129,140,248,0.3);
+  --txt: #f1f5f9; --txt2: #cbd5e1; --muted: #94a3b8; --line: #2d3a50;
   --shadow: 0 8px 32px rgba(0,0,0,0.4);
 }
 * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -44,11 +50,48 @@ body {
 /* NAVBAR */
 .navbar {
   position: fixed; top: 0; left: 0; right: 0; z-index: 1000;
-  background: rgba(10,14,26,0.85);
+  background: color-mix(in srgb, var(--bg) 88%, transparent);
   backdrop-filter: blur(20px);
   border-bottom: 1px solid var(--line);
   padding: 14px 32px;
   display: flex; align-items: center; justify-content: space-between;
+}
+
+/* Daylight theme + mobile-first comfort improvements */
+.nav-actions { display:flex; align-items:center; gap:8px; }
+.icon-button { width:40px; height:40px; border:1px solid var(--line); border-radius:10px; background:var(--card); color:var(--txt); cursor:pointer; font-size:1rem; }
+.icon-button:hover { color:var(--accent); border-color:var(--accent); }
+.mobile-menu { position:fixed; top:67px; left:0; right:0; z-index:999; box-shadow:var(--shadow); }
+.app-heading { display:flex; align-items:flex-start; justify-content:space-between; gap:16px; }
+.save-status { color:var(--muted); font-size:.8rem; margin-top:4px; }
+.quick-actions { display:flex; flex-wrap:wrap; gap:8px; justify-content:flex-end; }
+.quick-actions .btn { padding:9px 12px; font-size:.8rem; }
+.quick-summary { display:grid; grid-template-columns:repeat(3,1fr); gap:12px; margin:0 0 24px; }
+.summary-chip { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:12px 14px; }
+.summary-chip span { display:block; color:var(--muted); font-size:.74rem; text-transform:uppercase; letter-spacing:.04em; }
+.summary-chip strong { display:block; margin-top:2px; font-size:1.05rem; }
+.toast { position:fixed; left:50%; bottom:24px; z-index:3000; transform:translate(-50%,100px); opacity:0; background:var(--txt); color:var(--card); padding:12px 16px; border-radius:12px; box-shadow:var(--shadow); transition:.25s ease; font-size:.9rem; }
+.toast.show { transform:translate(-50%,0); opacity:1; }
+.skip-link { position:absolute; left:-10000px; top:auto; }
+.skip-link:focus { left:16px; top:12px; z-index:4000; background:var(--accent); color:white; padding:10px 14px; border-radius:8px; }
+button, input, select { min-height:44px; }
+@media (max-width: 768px) {
+  .nav-logo { width:36px; height:36px; border-radius:10px; font-size:1rem; }
+  .nav-title { font-size:1.1rem; }
+  .nav-actions .icon-button { width:36px; height:36px; min-height:36px; }
+  .mobile-menu { top:61px; }
+  .app-heading { display:block; }
+  .quick-actions { justify-content:flex-start; margin:14px 0 18px; overflow-x:auto; flex-wrap:nowrap; padding-bottom:2px; }
+  .quick-actions .btn { width:auto; min-width:max-content; }
+  .quick-summary { grid-template-columns:1fr; gap:8px; }
+  .summary-chip { display:flex; justify-content:space-between; align-items:center; }
+  .summary-chip strong { margin:0; }
+  .tabs { position:sticky; top:60px; z-index:20; box-shadow:0 5px 12px rgba(30,41,59,.08); }
+  .tab { min-height:44px; }
+  .modal-overlay { padding:0; align-items:flex-end; }
+  .modal { max-width:none; max-height:88vh; border-radius:20px 20px 0 0; padding:24px 20px calc(24px + env(safe-area-inset-bottom)); }
+  .modal-actions { position:sticky; bottom:-24px; background:var(--card); padding:14px 0 env(safe-area-inset-bottom); }
+  .modal-actions .btn { width:auto; min-width:120px; }
 }
 .nav-brand {
   display: flex; align-items: center; gap: 12px;
@@ -431,6 +474,7 @@ body {
 </style>
 </head>
 <body>
+<a class="skip-link" href="#app">Skip to EMI planner</a>
 
 <!-- NAVBAR -->
 <nav class="navbar">
@@ -443,7 +487,10 @@ body {
     <a href="#app">Analyzer</a>
     <a href="emi-about.html">Features & Roadmap</a>
   </div>
-  <button class="nav-toggle" onclick="toggleMobileMenu()" aria-label="Menu"><i class="fas fa-bars"></i></button>
+  <div class="nav-actions">
+    <button class="icon-button" id="themeToggle" onclick="toggleTheme()" aria-label="Switch to dark theme" title="Switch theme"><i class="fas fa-moon"></i></button>
+    <button class="nav-toggle" onclick="toggleMobileMenu()" aria-label="Menu" aria-expanded="false"><i class="fas fa-bars"></i></button>
+  </div>
 </nav>
 <div class="mobile-menu" id="mobileMenu">
   <a href="#home" onclick="closeMobileMenu()">Home</a>
@@ -466,18 +513,27 @@ body {
 <!-- MAIN APP -->
 <section class="app-section" id="app">
   <div class="app-container">
-    <h2 class="section-title" style="text-align:left;margin-bottom:8px">EMI Analyzer</h2>
-    <p class="section-sub" style="text-align:left;margin-bottom:24px">Enter your income, expenses, and loans to get complete analysis</p>
+    <div class="app-heading">
+      <div><h2 class="section-title" style="text-align:left;margin-bottom:8px">EMI Planner</h2><p class="section-sub" style="text-align:left;margin-bottom:0">Your private, simple plan for every monthly payment.</p></div>
+      <div class="quick-actions">
+        <button class="btn btn-outline" onclick="exportData()"><i class="fas fa-download"></i> Export</button>
+        <button class="btn btn-outline" onclick="document.getElementById('importFile').click()"><i class="fas fa-upload"></i> Import</button>
+        <button class="btn btn-primary" onclick="runAnalysis()"><i class="fas fa-chart-line"></i> View plan</button>
+        <input id="importFile" type="file" accept="application/json" hidden onchange="importData(event)">
+      </div>
+    </div>
+    <div class="save-status" id="saveStatus" aria-live="polite">Saved on this device</div>
+    <div class="quick-summary" id="quickSummary" aria-live="polite"></div>
 
     <!-- TABS -->
     <div class="tabs">
-      <button class="tab active" onclick="switchTab('input')"><i class="fas fa-edit"></i>&nbsp; Input Data</button>
-      <button class="tab" onclick="switchTab('calculator')"><i class="fas fa-calculator"></i>&nbsp; EMI Calculator</button>
-      <button class="tab" onclick="switchTab('dashboard')"><i class="fas fa-tachometer-alt"></i>&nbsp; Dashboard</button>
-      <button class="tab" onclick="switchTab('timeline')"><i class="fas fa-calendar-alt"></i>&nbsp; Timeline</button>
-      <button class="tab" onclick="switchTab('strategy')"><i class="fas fa-chess"></i>&nbsp; Strategy</button>
-      <button class="tab" onclick="switchTab('balance')"><i class="fas fa-chart-area"></i>&nbsp; Loan Balance</button>
-      <button class="tab" onclick="switchTab('details')"><i class="fas fa-table"></i>&nbsp; Details</button>
+      <button class="tab active" onclick="switchTab('input', this)"><i class="fas fa-edit"></i>&nbsp; My Money</button>
+      <button class="tab" onclick="switchTab('calculator', this)"><i class="fas fa-calculator"></i>&nbsp; Calculator</button>
+      <button class="tab" onclick="switchTab('dashboard', this)"><i class="fas fa-tachometer-alt"></i>&nbsp; Overview</button>
+      <button class="tab" onclick="switchTab('timeline', this)"><i class="fas fa-calendar-alt"></i>&nbsp; Timeline</button>
+      <button class="tab" onclick="switchTab('strategy', this)"><i class="fas fa-chess"></i>&nbsp; Strategy</button>
+      <button class="tab" onclick="switchTab('balance', this)"><i class="fas fa-chart-area"></i>&nbsp; Balances</button>
+      <button class="tab" onclick="switchTab('details', this)"><i class="fas fa-table"></i>&nbsp; Details</button>
     </div>
 
     <!-- TAB: INPUT -->
@@ -669,6 +725,8 @@ body {
     </div>
   </div>
 </div>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
 
 <!-- FOOTER -->
 <footer class="footer">

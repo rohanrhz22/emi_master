@@ -736,31 +736,74 @@ button, input, select { min-height:44px; }
 </footer>
 
 <script>
+// ===== AUTH GUARD =====
+const activeUser = localStorage.getItem('emiActiveUser');
+if (!activeUser) {
+  window.location.replace('login.html');
+  throw new Error('Redirecting to login');
+}
+const STORE_KEY = 'emiMaster_' + activeUser;
+
+// Show username in navbar
+document.addEventListener('DOMContentLoaded', () => {
+  const el = document.getElementById('navUserName');
+  if (el) el.textContent = activeUser;
+});
+
+function logout() {
+  localStorage.removeItem('emiActiveUser');
+  window.location.href = 'login.html';
+}
+
+// ===== MONTHLY AUTO-TICK =====
+// Each EMI stores lastUpdated: 'YYYY-MM' (the month it was last ticked).
+// On load, we calculate how many months have passed and subtract from pending.
+function tickEmis(emisArr) {
+  const now = new Date();
+  const nowKey = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0');
+  return emisArr
+    .map(e => {
+      const last = e.lastUpdated || nowKey;
+      const [ly, lm] = last.split('-').map(Number);
+      const monthsElapsed = (now.getFullYear() - ly) * 12 + (now.getMonth() + 1 - lm);
+      if (monthsElapsed <= 0) return e;
+      const newPending = Math.max(e.pending - monthsElapsed, 0);
+      return { ...e, pending: newPending, lastUpdated: nowKey };
+    })
+    .filter(e => e.pending > 0); // remove fully paid EMIs
+}
+
+function syncEmisToCurrentMonth() {
+  emis = tickEmis(emis);
+}
+
 // ===== STATE =====
 let emis = [];
 let state = { salary: 55000, otherIncome: 0, expenses: 15000, emergencyFund: 30000 };
 
-// Load from localStorage
 function loadState() {
-  const saved = localStorage.getItem('emiMasterData');
+  const saved = localStorage.getItem(STORE_KEY);
   if (saved) {
     const data = JSON.parse(saved);
-    emis = data.emis || [];
+    emis = tickEmis(data.emis || []);
     state = data.state || state;
     document.getElementById('salary').value = state.salary;
     document.getElementById('otherIncome').value = state.otherIncome;
     document.getElementById('expenses').value = state.expenses;
     document.getElementById('emergencyFund').value = state.emergencyFund;
+    // Persist ticked state immediately
+    localStorage.setItem(STORE_KEY, JSON.stringify({ emis, state }));
   }
   renderEmiList();
 }
 
 function saveState() {
+  syncEmisToCurrentMonth();
   state.salary = +document.getElementById('salary').value || 0;
   state.otherIncome = +document.getElementById('otherIncome').value || 0;
   state.expenses = +document.getElementById('expenses').value || 0;
   state.emergencyFund = +document.getElementById('emergencyFund').value || 0;
-  localStorage.setItem('emiMasterData', JSON.stringify({ emis, state }));
+  localStorage.setItem(STORE_KEY, JSON.stringify({ emis, state }));
 }
 
 // ===== THEME =====
@@ -868,7 +911,8 @@ function saveEmi() {
   const type = document.getElementById('emiType').value;
   if (!name || !amount || !pending) { alert('Please fill Name, Amount, and Pending months.'); return; }
   const idx = +document.getElementById('editIndex').value;
-  const emi = { name, amount, pending, rate, type };
+  const nowKey = new Date().getFullYear() + '-' + String(new Date().getMonth() + 1).padStart(2, '0');
+  const emi = { name, amount, pending, rate, type, lastUpdated: nowKey };
   if (idx >= 0) emis[idx] = emi; else emis.push(emi);
   saveState();
   renderEmiList();
@@ -1383,13 +1427,14 @@ function showToast(msg) {
 
 // ===== DEMO DATA =====
 function loadDemoData() {
+  const nowKey = new Date().getFullYear() + '-' + String(new Date().getMonth() + 1).padStart(2, '0');
   emis = [
-    { name: 'ICICI Loan on Card', amount: 10037, pending: 18, rate: 16, type: 'credit' },
-    { name: 'Axis Bank EMI', amount: 7000, pending: 32, rate: 12, type: 'personal' },
-    { name: 'Bike Loan', amount: 5800, pending: 43, rate: 9.5, type: 'vehicle' },
-    { name: 'Insurance', amount: 5000, pending: 3, rate: 0, type: 'insurance' },
-    { name: 'ICICI Merchant EMI #1', amount: 3605, pending: 8, rate: 14, type: 'credit' },
-    { name: 'ICICI Merchant EMI #2', amount: 3155, pending: 3, rate: 14, type: 'credit' }
+    { name: 'ICICI Loan on Card', amount: 10037, pending: 18, rate: 16, type: 'credit', lastUpdated: nowKey },
+    { name: 'Axis Bank EMI', amount: 7000, pending: 32, rate: 12, type: 'personal', lastUpdated: nowKey },
+    { name: 'Bike Loan', amount: 5800, pending: 43, rate: 9.5, type: 'vehicle', lastUpdated: nowKey },
+    { name: 'Insurance', amount: 5000, pending: 3, rate: 0, type: 'insurance', lastUpdated: nowKey },
+    { name: 'ICICI Merchant EMI #1', amount: 3605, pending: 8, rate: 14, type: 'credit', lastUpdated: nowKey },
+    { name: 'ICICI Merchant EMI #2', amount: 3155, pending: 3, rate: 14, type: 'credit', lastUpdated: nowKey }
   ];
   state = { salary: 55000, otherIncome: 0, expenses: 15000, emergencyFund: 30000 };
   document.getElementById('salary').value = 55000;
@@ -1421,11 +1466,23 @@ function closeMobileMenu() {
   document.getElementById('mobileMenu').classList.remove('open');
 }
 
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState !== 'visible' || !activeUser) return;
+  const before = JSON.stringify(emis);
+  syncEmisToCurrentMonth();
+  if (before !== JSON.stringify(emis)) {
+    localStorage.setItem(STORE_KEY, JSON.stringify({ emis, state }));
+    renderEmiList();
+    updateQuickSummary();
+  }
+});
+
 // Init
 const savedTheme = localStorage.getItem('emiTheme') || 'light';
 applyTheme(savedTheme === 'dark');
 loadState();
-if (emis.length === 0) loadDemoData();
+// Only load demo data for brand-new users with no saved data
+if (emis.length === 0 && !localStorage.getItem(STORE_KEY)) loadDemoData();
 updateQuickSummary();
 </script>
 </body>

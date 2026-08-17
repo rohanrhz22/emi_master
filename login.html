@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>EMI Master — Sign In</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
+<style>
+:root {
+  --bg: #f5f7fb; --card: #ffffff; --card2: #eef2ff; --line: #dbe3ef;
+  --accent: #6366f1; --accent2: #8b5cf6; --accent-glow: rgba(99,102,241,0.25);
+  --good: #10b981; --bad: #ef4444; --txt: #172033; --txt2: #44516a; --muted: #64748b;
+  --gradient1: linear-gradient(135deg, #6366f1, #8b5cf6);
+  --shadow: 0 8px 32px rgba(30,41,59,0.10);
+  --radius: 16px;
+}
+[data-theme="dark"] {
+  --bg: #0a0e1a; --card: #1a2235; --card2: #1f2a40; --line: #2d3a50;
+  --accent: #818cf8; --accent2: #a78bfa; --accent-glow: rgba(129,140,248,0.3);
+  --txt: #f1f5f9; --txt2: #cbd5e1; --muted: #94a3b8;
+  --shadow: 0 8px 32px rgba(0,0,0,0.4);
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: 'Inter', system-ui, sans-serif;
+  background: var(--bg); color: var(--txt);
+  min-height: 100vh; display: flex; flex-direction: column;
+  align-items: center; justify-content: center; padding: 24px;
+}
+.brand { display: flex; align-items: center; gap: 12px; margin-bottom: 32px; }
+.brand-logo {
+  width: 48px; height: 48px; border-radius: 14px;
+  background: var(--gradient1); display: flex; align-items: center;
+  justify-content: center; font-size: 1.4rem; color: white;
+  box-shadow: 0 4px 16px var(--accent-glow);
+}
+.brand-name {
+  font-family: 'Space Grotesk', sans-serif; font-size: 1.6rem; font-weight: 700;
+  background: var(--gradient1); -webkit-background-clip: text; background-clip: text; color: transparent;
+}
+.card {
+  background: var(--card); border: 1px solid var(--line);
+  border-radius: var(--radius); padding: 36px 32px;
+  width: 100%; max-width: 420px; box-shadow: var(--shadow);
+}
+.card-title { font-size: 1.3rem; font-weight: 700; margin-bottom: 6px; }
+.card-sub { color: var(--muted); font-size: 0.88rem; margin-bottom: 28px; }
+
+/* User tiles */
+.user-list { display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px; }
+.user-tile {
+  display: flex; align-items: center; gap: 14px;
+  background: var(--card2); border: 1px solid var(--line);
+  border-radius: 12px; padding: 14px 16px; cursor: pointer;
+  transition: all 0.2s;
+}
+.user-tile:hover { border-color: var(--accent); }
+.user-tile.selected { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-glow); }
+.user-avatar {
+  width: 40px; height: 40px; border-radius: 50%;
+  background: var(--gradient1); display: flex; align-items: center;
+  justify-content: center; font-weight: 700; font-size: 1rem; color: white; flex-shrink: 0;
+}
+.user-info { flex: 1; min-width: 0; }
+.user-name { font-weight: 600; font-size: 0.95rem; }
+.user-meta { color: var(--muted); font-size: 0.78rem; margin-top: 2px; }
+.user-tile-del {
+  width: 30px; height: 30px; border-radius: 8px; border: none;
+  background: rgba(239,68,68,0.1); color: var(--bad); cursor: pointer;
+  font-size: 0.8rem; flex-shrink: 0; transition: background 0.2s;
+}
+.user-tile-del:hover { background: rgba(239,68,68,0.25); }
+
+/* PIN pad */
+.pin-section { display: none; }
+.pin-section.show { display: block; }
+.pin-label { font-size: 0.82rem; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px; }
+.pin-dots { display: flex; gap: 10px; justify-content: center; margin-bottom: 20px; }
+.pin-dot {
+  width: 14px; height: 14px; border-radius: 50%;
+  border: 2px solid var(--line); background: transparent; transition: all 0.2s;
+}
+.pin-dot.filled { background: var(--accent); border-color: var(--accent); }
+.pin-pad { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+.pin-key {
+  height: 52px; border-radius: 12px; border: 1px solid var(--line);
+  background: var(--card2); color: var(--txt); font-size: 1.1rem; font-weight: 600;
+  cursor: pointer; transition: all 0.15s;
+}
+.pin-key:hover { background: var(--accent); color: white; border-color: var(--accent); }
+.pin-key.del { font-size: 0.9rem; }
+.pin-error { color: var(--bad); font-size: 0.82rem; text-align: center; margin-top: 10px; min-height: 18px; }
+
+/* Divider */
+.divider { display: flex; align-items: center; gap: 12px; margin: 20px 0; color: var(--muted); font-size: 0.82rem; }
+.divider::before, .divider::after { content: ''; flex: 1; height: 1px; background: var(--line); }
+
+/* New user form */
+.new-user-form { display: none; }
+.new-user-form.show { display: block; }
+.form-group { margin-bottom: 14px; }
+.form-group label { display: block; font-size: 0.82rem; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px; }
+.form-group input {
+  width: 100%; padding: 11px 14px; border-radius: 10px;
+  border: 1px solid var(--line); background: var(--card2);
+  color: var(--txt); font-size: 0.95rem; transition: border-color 0.2s;
+  min-height: 44px;
+}
+.form-group input:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-glow); }
+.form-group .hint { color: var(--muted); font-size: 0.75rem; margin-top: 4px; }
+.btn {
+  width: 100%; padding: 13px; border-radius: 12px; font-size: 0.95rem;
+  font-weight: 600; cursor: pointer; border: none; transition: all 0.2s;
+  display: flex; align-items: center; justify-content: center; gap: 8px; min-height: 44px;
+}
+.btn-primary { background: var(--gradient1); color: white; box-shadow: 0 4px 16px var(--accent-glow); }
+.btn-primary:hover { transform: translateY(-1px); }
+.btn-ghost { background: transparent; color: var(--accent); border: 1.5px solid var(--accent); margin-top: 10px; }
+.btn-ghost:hover { background: var(--card2); }
+.back-link { text-align: center; margin-top: 14px; color: var(--muted); font-size: 0.85rem; cursor: pointer; }
+.back-link span { color: var(--accent); font-weight: 600; }
+
+.theme-toggle {
+  position: fixed; top: 16px; right: 16px;
+  width: 40px; height: 40px; border-radius: 10px;
+  border: 1px solid var(--line); background: var(--card);
+  color: var(--txt); cursor: pointer; font-size: 1rem;
+}
+.theme-toggle:hover { color: var(--accent); border-color: var(--accent); }
+</style>
+</head>
+<body>
+<button class="theme-toggle" id="themeToggle" onclick="toggleTheme()" title="Switch theme"><i class="fas fa-moon"></i></button>
+
+<div class="brand">
+  <div class="brand-logo"><i class="fas fa-chart-pie"></i></div>
+  <span class="brand-name">EMI Master</span>
+</div>
+
+<!-- SELECT USER VIEW -->
+<div class="card" id="selectView">
+  <div class="card-title">Welcome back</div>
+  <div class="card-sub">Select your profile to continue</div>
+  <div class="user-list" id="userList"></div>
+
+  <!-- PIN entry (shown after selecting a user) -->
+  <div class="pin-section" id="pinSection">
+    <div class="pin-label">Enter your 4-digit PIN</div>
+    <div class="pin-dots" id="pinDots">
+      <div class="pin-dot" id="d0"></div>
+      <div class="pin-dot" id="d1"></div>
+      <div class="pin-dot" id="d2"></div>
+      <div class="pin-dot" id="d3"></div>
+    </div>
+    <div class="pin-pad">
+      <button class="pin-key" onclick="pinKey('1')">1</button>
+      <button class="pin-key" onclick="pinKey('2')">2</button>
+      <button class="pin-key" onclick="pinKey('3')">3</button>
+      <button class="pin-key" onclick="pinKey('4')">4</button>
+      <button class="pin-key" onclick="pinKey('5')">5</button>
+      <button class="pin-key" onclick="pinKey('6')">6</button>
+      <button class="pin-key" onclick="pinKey('7')">7</button>
+      <button class="pin-key" onclick="pinKey('8')">8</button>
+      <button class="pin-key" onclick="pinKey('9')">9</button>
+      <button class="pin-key" onclick="pinKey('0')" style="grid-column:2">0</button>
+      <button class="pin-key del" onclick="pinDel()"><i class="fas fa-delete-left"></i></button>
+    </div>
+    <div class="pin-error" id="pinError"></div>
+    <div class="back-link" onclick="cancelPin()">← <span>Choose different user</span></div>
+  </div>
+
+  <div class="divider" id="divider">or</div>
+  <button class="btn btn-ghost" id="newUserBtn" onclick="showNewUser()"><i class="fas fa-user-plus"></i> Add New User</button>
+</div>
+
+<!-- NEW USER VIEW -->
+<div class="card" id="newUserView" style="display:none">
+  <div class="card-title">Create Profile</div>
+  <div class="card-sub">Set up your personal EMI tracker</div>
+  <div class="form-group">
+    <label>Your Name</label>
+    <input type="text" id="newName" placeholder="e.g. Rohan" maxlength="30">
+  </div>
+  <div class="form-group">
+    <label>4-Digit PIN</label>
+    <input type="password" id="newPin" placeholder="••••" maxlength="4" inputmode="numeric" pattern="[0-9]*">
+    <div class="hint">Used to protect your data on this device</div>
+  </div>
+  <div class="form-group">
+    <label>Confirm PIN</label>
+    <input type="password" id="newPinConfirm" placeholder="••••" maxlength="4" inputmode="numeric" pattern="[0-9]*">
+  </div>
+  <button class="btn btn-primary" onclick="createUser()"><i class="fas fa-check"></i> Create Profile</button>
+  <div class="back-link" onclick="showSelect()">← <span>Back to login</span></div>
+</div>
+
+<script>
+// ===== THEME =====
+function applyTheme(dark) {
+  document.documentElement.setAttribute('data-theme', dark ? 'dark' : 'light');
+  const btn = document.getElementById('themeToggle');
+  btn.innerHTML = dark ? '<i class="fas fa-sun"></i>' : '<i class="fas fa-moon"></i>';
+  localStorage.setItem('emiTheme', dark ? 'dark' : 'light');
+}
+function toggleTheme() {
+  applyTheme(document.documentElement.getAttribute('data-theme') !== 'dark');
+}
+
+// ===== USER STORE =====
+// users stored as: emiUsers = [ { name, pin, created } ]
+// user data stored as: emiMaster_<name> = { emis, state }
+function getUsers() {
+  return JSON.parse(localStorage.getItem('emiUsers') || '[]');
+}
+function saveUsers(users) {
+  localStorage.setItem('emiUsers', JSON.stringify(users));
+}
+
+// ===== RENDER USER LIST =====
+let selectedUser = null;
+let pinBuffer = '';
+
+function renderUsers() {
+  const users = getUsers();
+  const list = document.getElementById('userList');
+  if (users.length === 0) {
+    list.innerHTML = '<div style="text-align:center;padding:20px 0;color:var(--muted);font-size:0.88rem"><i class="fas fa-users" style="font-size:1.8rem;display:block;margin-bottom:8px"></i>No profiles yet. Create one below.</div>';
+    return;
+  }
+  list.innerHTML = users.map((u, i) => {
+    const data = JSON.parse(localStorage.getItem('emiMaster_' + u.name) || '{"emis":[]}');
+    const count = data.emis ? data.emis.length : 0;
+    const initials = u.name.slice(0, 2).toUpperCase();
+    return `<div class="user-tile" id="tile-${i}" onclick="selectUser(${i})">
+      <div class="user-avatar">${initials}</div>
+      <div class="user-info">
+        <div class="user-name">${escHtml(u.name)}</div>
+        <div class="user-meta">${count} loan${count !== 1 ? 's' : ''} · joined ${new Date(u.created).toLocaleDateString('en-IN', {month:'short', year:'numeric'})}</div>
+      </div>
+      <button class="user-tile-del" onclick="deleteUser(event,${i})" title="Remove profile"><i class="fas fa-trash"></i></button>
+    </div>`;
+  }).join('');
+}
+
+function selectUser(i) {
+  selectedUser = i;
+  pinBuffer = '';
+  document.querySelectorAll('.user-tile').forEach((t, j) => t.classList.toggle('selected', j === i));
+  document.getElementById('pinSection').classList.add('show');
+  document.getElementById('divider').style.display = 'none';
+  document.getElementById('newUserBtn').style.display = 'none';
+  updatePinDots();
+  document.getElementById('pinError').textContent = '';
+}
+
+function cancelPin() {
+  selectedUser = null;
+  pinBuffer = '';
+  document.querySelectorAll('.user-tile').forEach(t => t.classList.remove('selected'));
+  document.getElementById('pinSection').classList.remove('show');
+  document.getElementById('divider').style.display = '';
+  document.getElementById('newUserBtn').style.display = '';
+  updatePinDots();
+}
+
+function deleteUser(e, i) {
+  e.stopPropagation();
+  const users = getUsers();
+  if (!confirm(`Remove profile "${users[i].name}"? All their data will be deleted.`)) return;
+  localStorage.removeItem('emiMaster_' + users[i].name);
+  users.splice(i, 1);
+  saveUsers(users);
+  cancelPin();
+  renderUsers();
+}
+
+// ===== PIN =====
+function pinKey(k) {
+  if (pinBuffer.length >= 4) return;
+  pinBuffer += k;
+  updatePinDots();
+  if (pinBuffer.length === 4) setTimeout(checkPin, 120);
+}
+function pinDel() {
+  pinBuffer = pinBuffer.slice(0, -1);
+  updatePinDots();
+  document.getElementById('pinError').textContent = '';
+}
+function updatePinDots() {
+  for (let i = 0; i < 4; i++) {
+    document.getElementById('d' + i).classList.toggle('filled', i < pinBuffer.length);
+  }
+}
+function checkPin() {
+  const users = getUsers();
+  const user = users[selectedUser];
+  if (pinBuffer === user.pin) {
+    localStorage.setItem('emiActiveUser', user.name);
+    window.location.href = 'index.html';
+  } else {
+    document.getElementById('pinError').textContent = 'Incorrect PIN. Try again.';
+    pinBuffer = '';
+    updatePinDots();
+  }
+}
+
+// ===== CREATE USER =====
+function createUser() {
+  const name = document.getElementById('newName').value.trim();
+  const pin = document.getElementById('newPin').value.trim();
+  const confirm = document.getElementById('newPinConfirm').value.trim();
+  if (!name) { alert('Please enter your name.'); return; }
+  if (!/^\d{4}$/.test(pin)) { alert('PIN must be exactly 4 digits.'); return; }
+  if (pin !== confirm) { alert('PINs do not match.'); return; }
+  const users = getUsers();
+  if (users.find(u => u.name.toLowerCase() === name.toLowerCase())) {
+    alert('A profile with this name already exists.'); return;
+  }
+  users.push({ name, pin, created: Date.now() });
+  saveUsers(users);
+  localStorage.setItem('emiActiveUser', name);
+  window.location.href = 'index.html';
+}
+
+// ===== VIEWS =====
+function showNewUser() {
+  document.getElementById('selectView').style.display = 'none';
+  document.getElementById('newUserView').style.display = 'block';
+}
+function showSelect() {
+  document.getElementById('newUserView').style.display = 'none';
+  document.getElementById('selectView').style.display = 'block';
+  document.getElementById('newName').value = '';
+  document.getElementById('newPin').value = '';
+  document.getElementById('newPinConfirm').value = '';
+}
+
+function escHtml(s) {
+  const d = document.createElement('div'); d.textContent = s; return d.innerHTML;
+}
+
+// ===== INIT =====
+const savedTheme = localStorage.getItem('emiTheme') || 'light';
+applyTheme(savedTheme === 'dark');
+
+// If already logged in, go straight to app
+if (localStorage.getItem('emiActiveUser')) {
+  window.location.href = 'index.html';
+}
+
+// Seed Rohan's existing data if migrating from old single-user setup
+(function migrateOldData() {
+  const old = localStorage.getItem('emiMasterData');
+  const users = getUsers();
+  if (old && !users.find(u => u.name === 'Rohan')) {
+    users.push({ name: 'Rohan', pin: '1234', created: Date.now() });
+    saveUsers(users);
+    localStorage.setItem('emiMaster_Rohan', old);
+    // Don't remove old key so nothing breaks if user goes back
+  }
+})();
+
+renderUsers();
+
+// Allow Enter key on new user form
+document.getElementById('newPinConfirm').addEventListener('keydown', e => {
+  if (e.key === 'Enter') createUser();
+});
+</script>
+</body>
+</html>

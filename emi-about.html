@@ -8,12 +8,17 @@
 <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
 <style>
 :root {
-  --bg: #0a0e1a; --bg2: #111827; --card: #1a2235; --card2: #1f2a40; --card3: #243049;
-  --accent: #6366f1; --accent2: #8b5cf6; --accent-glow: rgba(99,102,241,0.3);
+  --bg: #f5f7fb; --bg2: #edf2f9; --card: #ffffff; --card2: #eef2ff; --card3: #e2e8f0;
+  --accent: #4656c8; --accent2: #7461cf; --accent-glow: rgba(70,86,200,0.2);
   --good: #10b981; --warn: #f59e0b; --bad: #ef4444;
-  --txt: #f1f5f9; --txt2: #cbd5e1; --muted: #64748b; --line: #2d3a50;
+  --txt: #172033; --txt2: #44516a; --muted: #64748b; --line: #dbe3ef;
   --gradient1: linear-gradient(135deg, #6366f1, #8b5cf6);
   --radius: 16px;
+}
+[data-theme="dark"] {
+  --bg: #0a0e1a; --bg2: #111827; --card: #1a2235; --card2: #1f2a40; --card3: #243049;
+  --accent: #818cf8; --accent2: #a78bfa; --accent-glow: rgba(129,140,248,0.3);
+  --txt: #f1f5f9; --txt2: #cbd5e1; --muted: #94a3b8; --line: #2d3a50;
 }
 * { box-sizing: border-box; margin: 0; padding: 0; }
 html { scroll-behavior: smooth; }
@@ -356,6 +361,11 @@ body {
   <p>Smart Debt Analysis & Freedom Planning Tool</p>
   <p style="margin-top:8px;font-size:0.78rem">Built for personal financial planning · All calculations are indicative</p>
 </footer>
+
+<script>
+const savedTheme = localStorage.getItem('emiTheme') || 'light';
+document.documentElement.setAttribute('data-theme', savedTheme);
+</script>
 
 </body>
 </html>

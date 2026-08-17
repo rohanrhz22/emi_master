@@ -763,12 +763,24 @@ function saveState() {
   localStorage.setItem('emiMasterData', JSON.stringify({ emis, state }));
 }
 
+// ===== THEME =====
+function applyTheme(dark) {
+  document.documentElement.setAttribute('data-theme', dark ? 'dark' : 'light');
+  const btn = document.getElementById('themeToggle');
+  btn.innerHTML = dark ? '<i class="fas fa-sun"></i>' : '<i class="fas fa-moon"></i>';
+  btn.setAttribute('aria-label', dark ? 'Switch to light theme' : 'Switch to dark theme');
+  localStorage.setItem('emiTheme', dark ? 'dark' : 'light');
+}
+function toggleTheme() {
+  applyTheme(document.documentElement.getAttribute('data-theme') !== 'dark');
+}
+
 // ===== TABS =====
-function switchTab(name) {
+function switchTab(name, btn) {
   document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
   document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
   document.getElementById('tab-' + name).classList.add('active');
-  event.target.closest('.tab').classList.add('active');
+  (btn || event.currentTarget).classList.add('active');
 }
 
 // ===== EMI CRUD =====
@@ -842,6 +854,7 @@ function deleteEmi(i) {
     emis.splice(i, 1);
     saveState();
     renderEmiList();
+    updateQuickSummary();
   }
 }
 
@@ -859,6 +872,7 @@ function saveEmi() {
   if (idx >= 0) emis[idx] = emi; else emis.push(emi);
   saveState();
   renderEmiList();
+  updateQuickSummary();
   closeModal();
 }
 
@@ -877,7 +891,7 @@ function runAnalysis() {
   document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
   document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
   document.getElementById('tab-dashboard').classList.add('active');
-  document.querySelectorAll('.tab')[1].classList.add('active');
+  document.querySelector('.tab[onclick*="dashboard"]').classList.add('active');
 }
 
 function generateDashboard() {
@@ -1313,6 +1327,60 @@ function renderTotalDebtChart() {
   }).join('');
 }
 
+// ===== EXPORT / IMPORT =====
+function exportData() {
+  saveState();
+  const blob = new Blob([JSON.stringify({ emis, state }, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'emi-master-backup.json';
+  a.click();
+  showToast('Data exported!');
+}
+function importData(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const data = JSON.parse(e.target.result);
+      if (!data.emis || !data.state) throw new Error();
+      emis = data.emis;
+      state = data.state;
+      document.getElementById('salary').value = state.salary;
+      document.getElementById('otherIncome').value = state.otherIncome;
+      document.getElementById('expenses').value = state.expenses;
+      document.getElementById('emergencyFund').value = state.emergencyFund;
+      saveState();
+      renderEmiList();
+      updateQuickSummary();
+      showToast('Data imported successfully!');
+    } catch { showToast('Invalid file. Please use a valid EMI Master export.'); }
+  };
+  reader.readAsText(file);
+  event.target.value = '';
+}
+
+// ===== QUICK SUMMARY =====
+function updateQuickSummary() {
+  const totalIncome = state.salary + state.otherIncome;
+  const totalEmi = emis.reduce((s, e) => s + e.amount, 0);
+  const freeCash = totalIncome - totalEmi - state.expenses;
+  document.getElementById('quickSummary').innerHTML = `
+    <div class="summary-chip"><span>Monthly EMIs</span><strong style="color:var(--bad)">₹${totalEmi.toLocaleString('en-IN')}</strong></div>
+    <div class="summary-chip"><span>Free Cash</span><strong style="color:${freeCash >= 0 ? 'var(--good)' : 'var(--bad)'}">₹${freeCash.toLocaleString('en-IN')}</strong></div>
+    <div class="summary-chip"><span>Loans Active</span><strong>${emis.length}</strong></div>
+  `;
+}
+
+// ===== TOAST =====
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2800);
+}
+
 // ===== DEMO DATA =====
 function loadDemoData() {
   emis = [
@@ -1354,8 +1422,11 @@ function closeMobileMenu() {
 }
 
 // Init
+const savedTheme = localStorage.getItem('emiTheme') || 'light';
+applyTheme(savedTheme === 'dark');
 loadState();
 if (emis.length === 0) loadDemoData();
+updateQuickSummary();
 </script>
 </body>
 </html>

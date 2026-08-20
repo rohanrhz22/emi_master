@@ -501,6 +501,10 @@ body {
             <label>Emergency Fund Target (₹)</label>
             <input type="number" id="emergencyFund" placeholder="e.g. 30000" value="30000">
           </div>
+          <div class="form-group">
+            <label>As of Date</label>
+            <input type="date" id="asOfDate" onchange="refreshDateCalculations()">
+          </div>
         </div>
       </div>
 
@@ -559,6 +563,10 @@ body {
     <!-- TAB: DASHBOARD -->
     <div class="tab-content" id="tab-dashboard">
       <div class="dash-grid" id="kpiGrid"></div>
+      <div class="chart-container">
+        <div class="chart-title"><i class="fas fa-calendar-check"></i> EMI Progress</div>
+        <div class="dash-grid" style="grid-template-columns:repeat(4,1fr);margin-bottom:0" id="emiProgressGrid"></div>
+      </div>
       <div class="chart-container">
         <div class="chart-title">Salary Allocation Breakdown</div>
         <div class="donut-wrapper">
@@ -643,8 +651,12 @@ body {
       <input type="number" id="emiAmount" placeholder="e.g. 10000">
     </div>
     <div class="form-group">
-      <label>Pending Installments</label>
-      <input type="number" id="emiPending" placeholder="e.g. 18">
+      <label>Total Installments</label>
+      <input type="number" id="emiPending" placeholder="e.g. 18" min="1">
+    </div>
+    <div class="form-group">
+      <label>EMI Start Date</label>
+      <input type="date" id="emiStartDate">
     </div>
     <div class="form-group">
       <label>Interest Rate (% p.a.) — Optional</label>
@@ -680,7 +692,7 @@ body {
 <script>
 // ===== STATE =====
 let emis = [];
-let state = { salary: 55000, otherIncome: 0, expenses: 15000, emergencyFund: 30000 };
+let state = { salary: 55000, otherIncome: 0, expenses: 15000, emergencyFund: 30000, asOfDate: '' };
 
 // Load from localStorage
 function loadState() {
@@ -694,6 +706,7 @@ function loadState() {
     document.getElementById('expenses').value = state.expenses;
     document.getElementById('emergencyFund').value = state.emergencyFund;
   }
+  document.getElementById('asOfDate').value = state.asOfDate || getTodayInputDate();
   renderEmiList();
 }
 
@@ -702,6 +715,7 @@ function saveState() {
   state.otherIncome = +document.getElementById('otherIncome').value || 0;
   state.expenses = +document.getElementById('expenses').value || 0;
   state.emergencyFund = +document.getElementById('emergencyFund').value || 0;
+  state.asOfDate = document.getElementById('asOfDate').value || getTodayInputDate();
   localStorage.setItem('emiMasterData', JSON.stringify({ emis, state }));
 }
 
@@ -734,12 +748,13 @@ function renderEmiList() {
   if (emis.length === 0) { list.innerHTML = ''; noEmi.style.display = 'block'; return; }
   noEmi.style.display = 'none';
   list.innerHTML = emis.map((e, i) => `
+    ${(() => { const progress = getEmiProgress(e); return `
     <div class="emi-item">
       <div class="emi-item-info">
         <div class="emi-item-icon"><i class="fas ${typeIcons[e.type] || 'fa-money-bill'}"></i></div>
         <div>
           <div class="emi-item-name">${escapeHtml(e.name)}</div>
-          <div class="emi-item-details">${e.pending} months left · ${e.rate ? e.rate + '% p.a.' : 'Rate N/A'} · Ends ${getEndDate(e.pending)}</div>
+          <div class="emi-item-details">${progress.paid} paid · ${progress.remaining} months left · ${e.rate ? e.rate + '% p.a.' : 'Rate N/A'} · Started ${formatDate(progress.startDate)} · Ends ${getEndDate(progress.remaining)}</div>
         </div>
       </div>
       <div style="display:flex;align-items:center;gap:16px">
@@ -750,6 +765,7 @@ function renderEmiList() {
         </div>
       </div>
     </div>
+  `; })()}
   `).join('');
 }
 
@@ -760,9 +776,44 @@ function escapeHtml(str) {
 }
 
 function getEndDate(months) {
-  const d = new Date();
+  const d = new Date(`${getAsOfDate()}T00:00:00`);
   d.setMonth(d.getMonth() + months);
   return d.toLocaleString('en-IN', { month: 'short', year: 'numeric' });
+}
+
+function getTodayInputDate() {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
+function getAsOfDate() {
+  return document.getElementById('asOfDate')?.value || state.asOfDate || getTodayInputDate();
+}
+
+function getEmiProgress(emi) {
+  const total = Math.max(1, Number(emi.pending) || 0);
+  const start = emi.startDate ? new Date(`${emi.startDate}T00:00:00`) : new Date();
+  const now = new Date(`${getAsOfDate()}T00:00:00`);
+  let paid = (now.getFullYear() - start.getFullYear()) * 12 + now.getMonth() - start.getMonth();
+  if (now.getDate() < start.getDate()) paid--;
+  paid = Math.max(0, Math.min(total, paid));
+  return { total, paid, remaining: total - paid, startDate: emi.startDate || getTodayInputDate() };
+}
+
+function formatDate(dateValue) {
+  return new Date(`${dateValue}T00:00:00`).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
+}
+
+function refreshDateCalculations() {
+  saveState();
+  renderEmiList();
+  if (emis.length) {
+    generateDashboard();
+    generateTimeline();
+    generateStrategy();
+    generateDetails();
+    generateBalanceReduction();
+  }
 }
 
 function openAddModal() {
@@ -770,6 +821,7 @@ function openAddModal() {
   document.getElementById('emiName').value = '';
   document.getElementById('emiAmount').value = '';
   document.getElementById('emiPending').value = '';
+  document.getElementById('emiStartDate').value = getTodayInputDate();
   document.getElementById('emiRate').value = '';
   document.getElementById('emiType').value = 'personal';
   document.getElementById('editIndex').value = -1;
@@ -782,6 +834,7 @@ function editEmi(i) {
   document.getElementById('emiName').value = e.name;
   document.getElementById('emiAmount').value = e.amount;
   document.getElementById('emiPending').value = e.pending;
+  document.getElementById('emiStartDate').value = e.startDate || getTodayInputDate();
   document.getElementById('emiRate').value = e.rate || '';
   document.getElementById('emiType').value = e.type;
   document.getElementById('editIndex').value = i;
@@ -802,11 +855,12 @@ function saveEmi() {
   const name = document.getElementById('emiName').value.trim();
   const amount = +document.getElementById('emiAmount').value;
   const pending = +document.getElementById('emiPending').value;
+  const startDate = document.getElementById('emiStartDate').value || getTodayInputDate();
   const rate = +document.getElementById('emiRate').value || 0;
   const type = document.getElementById('emiType').value;
   if (!name || !amount || !pending) { alert('Please fill Name, Amount, and Pending months.'); return; }
   const idx = +document.getElementById('editIndex').value;
-  const emi = { name, amount, pending, rate, type };
+  const emi = { name, amount, pending, rate, type, startDate };
   if (idx >= 0) emis[idx] = emi; else emis.push(emi);
   saveState();
   renderEmiList();
@@ -834,7 +888,7 @@ function runAnalysis() {
 function generateDashboard() {
   const totalIncome = state.salary + state.otherIncome;
   const totalEmi = emis.reduce((s, e) => s + e.amount, 0);
-  const totalDebt = emis.reduce((s, e) => s + e.amount * e.pending, 0);
+  const totalDebt = emis.reduce((s, e) => s + e.amount * getEmiProgress(e).remaining, 0);
   const freeCash = totalIncome - totalEmi - state.expenses;
   const emiPercent = Math.round((totalEmi / totalIncome) * 100);
 
@@ -844,6 +898,15 @@ function generateDashboard() {
     <div class="kpi-card bad"><div class="kpi-label">Total EMIs</div><div class="kpi-value" style="color:var(--bad)">₹${totalEmi.toLocaleString('en-IN')}</div></div>
     <div class="kpi-card warn"><div class="kpi-label">Expenses</div><div class="kpi-value" style="color:var(--warn)">₹${state.expenses.toLocaleString('en-IN')}</div></div>
     <div class="kpi-card ${freeCash >= 0 ? 'accent' : 'bad'}"><div class="kpi-label">Free Cash</div><div class="kpi-value" style="color:${freeCash >= 0 ? 'var(--accent)' : 'var(--bad)'}">₹${freeCash.toLocaleString('en-IN')}</div></div>
+  `;
+
+  const totalPaid = emis.reduce((s, e) => s + getEmiProgress(e).paid, 0);
+  const totalRemaining = emis.reduce((s, e) => s + getEmiProgress(e).remaining, 0);
+  document.getElementById('emiProgressGrid').innerHTML = `
+    <div class="kpi-card accent"><div class="kpi-label">Current Date</div><div class="kpi-value" style="color:var(--accent);font-size:1.2rem">${formatDate(getAsOfDate())}</div></div>
+    <div class="kpi-card good"><div class="kpi-label">EMIs Paid Till Now</div><div class="kpi-value" style="color:var(--good)">${totalPaid}</div></div>
+    <div class="kpi-card warn"><div class="kpi-label">EMIs Remaining</div><div class="kpi-value" style="color:var(--warn)">${totalRemaining}</div></div>
+    <div class="kpi-card bad"><div class="kpi-label">Outstanding Debt</div><div class="kpi-value" style="color:var(--bad)">₹${totalDebt.toLocaleString('en-IN')}</div></div>
   `;
 
   // Donut
@@ -902,7 +965,7 @@ function renderDonut(segments, total) {
 function generateTimeline() {
   const totalIncome = state.salary + state.otherIncome;
   // Sort EMIs by end date (pending months)
-  const sorted = [...emis].sort((a, b) => a.pending - b.pending);
+  const sorted = [...emis].sort((a, b) => getEmiProgress(a).remaining - getEmiProgress(b).remaining);
   let currentEmi = emis.reduce((s, e) => s + e.amount, 0);
   let timeline = '';
   let cashData = [];
@@ -911,7 +974,7 @@ function generateTimeline() {
 
   const grouped = {};
   sorted.forEach(e => {
-    const key = e.pending;
+    const key = getEmiProgress(e).remaining;
     if (!grouped[key]) grouped[key] = [];
     grouped[key].push(e);
   });
@@ -935,7 +998,7 @@ function generateTimeline() {
   });
 
   // Final debt-free marker
-  const lastMonth = Math.max(...emis.map(e => e.pending));
+  const lastMonth = Math.max(...emis.map(e => getEmiProgress(e).remaining));
   timeline += `<div class="tl-item complete">
     <div class="tl-date">🎉 ${getEndDate(lastMonth + 1)} — DEBT FREE!</div>
     <div class="tl-text">All EMIs cleared. Your full income of ₹${totalIncome.toLocaleString('en-IN')} is yours.</div>
@@ -960,7 +1023,7 @@ function generateStrategy() {
   const totalEmi = emis.reduce((s, e) => s + e.amount, 0);
   const freeCash = totalIncome - totalEmi - state.expenses;
   const highInterest = [...emis].sort((a, b) => (b.rate || 0) - (a.rate || 0));
-  const smallest = [...emis].sort((a, b) => (a.amount * a.pending) - (b.amount * b.pending));
+  const smallest = [...emis].sort((a, b) => (a.amount * getEmiProgress(a).remaining) - (b.amount * getEmiProgress(b).remaining));
 
   let html = '';
 
@@ -992,7 +1055,7 @@ function generateStrategy() {
     <h4 style="color:var(--good)"><i class="fas fa-snowflake"></i> Snowball Method (Quick Wins)</h4>
     <ul class="tip-list">
       <li>Pay off the <strong>smallest balance</strong> first for psychological momentum</li>
-      ${smallest.slice(0, 3).map(e => `<li>Clear: ${escapeHtml(e.name)} (₹${(e.amount * e.pending).toLocaleString('en-IN')} remaining)</li>`).join('')}
+      ${smallest.slice(0, 3).map(e => `<li>Clear: ${escapeHtml(e.name)} (₹${(e.amount * getEmiProgress(e).remaining).toLocaleString('en-IN')} remaining)</li>`).join('')}
       <li>Each cleared loan frees cash to attack the next one faster</li>
     </ul>
   </div>`;
@@ -1028,8 +1091,9 @@ function generateDetails() {
   let grandTotalPayable = 0, grandTotalInterest = 0, grandPrincipal = 0;
 
   let rows = emis.map(e => {
-    const totalPayable = e.amount * e.pending;
-    const principal = calcPrincipalFromEmi(e.amount, e.rate, e.pending);
+    const progress = getEmiProgress(e);
+    const totalPayable = e.amount * progress.remaining;
+    const principal = calcPrincipalFromEmi(e.amount, e.rate, progress.remaining);
     const interest = totalPayable - principal;
     grandTotalPayable += totalPayable;
     grandTotalInterest += interest;
@@ -1037,8 +1101,8 @@ function generateDetails() {
     return `<tr>
       <td>${escapeHtml(e.name)}</td>
       <td class="num">₹${e.amount.toLocaleString('en-IN')}</td>
-      <td class="num">${e.pending}</td>
-      <td>${getEndDate(e.pending)}</td>
+      <td class="num">${progress.paid} paid / ${progress.remaining} left</td>
+      <td>${getEndDate(progress.remaining)}</td>
       <td class="num">${e.rate ? e.rate + '%' : '—'}</td>
       <td class="num">₹${principal.toLocaleString('en-IN')}</td>
       <td class="num" style="color:var(--bad)">₹${interest.toLocaleString('en-IN')}</td>
@@ -1053,9 +1117,9 @@ function generateDetails() {
   `;
 
   document.getElementById('detailsTable').innerHTML = `
-    <thead><tr><th>Loan</th><th class="num">Monthly</th><th class="num">Months</th><th>Ends</th><th class="num">Rate</th><th class="num">Principal</th><th class="num">Interest</th><th class="num">Total</th></tr></thead>
+    <thead><tr><th>Loan</th><th class="num">Monthly</th><th class="num">Progress</th><th>Ends</th><th class="num">Rate</th><th class="num">Principal</th><th class="num">Interest</th><th class="num">Remaining</th></tr></thead>
     <tbody>${rows}</tbody>
-    <tfoot><tr><td>TOTAL</td><td class="num">₹${totalEmi.toLocaleString('en-IN')}</td><td>—</td><td>${getEndDate(Math.max(...emis.map(e => e.pending)))}</td><td>—</td><td class="num">₹${grandPrincipal.toLocaleString('en-IN')}</td><td class="num">₹${grandTotalInterest.toLocaleString('en-IN')}</td><td class="num">₹${grandTotalPayable.toLocaleString('en-IN')}</td></tr></tfoot>
+    <tfoot><tr><td>TOTAL</td><td class="num">₹${totalEmi.toLocaleString('en-IN')}</td><td>—</td><td>${getEndDate(Math.max(...emis.map(e => getEmiProgress(e).remaining)))}</td><td>—</td><td class="num">₹${grandPrincipal.toLocaleString('en-IN')}</td><td class="num">₹${grandTotalInterest.toLocaleString('en-IN')}</td><td class="num">₹${grandTotalPayable.toLocaleString('en-IN')}</td></tr></tfoot>
   `;
 }
 
@@ -1121,7 +1185,7 @@ function addCalcAsEmi() {
   if (!lastCalc.emi) return;
   const name = prompt('Loan name for this EMI:');
   if (!name) return;
-  emis.push({ name, amount: lastCalc.emi, pending: lastCalc.N, rate: lastCalc.ratePA, type: 'personal' });
+  emis.push({ name, amount: lastCalc.emi, pending: lastCalc.N, rate: lastCalc.ratePA, type: 'personal', startDate: getTodayInputDate() });
   saveState(); renderEmiList();
   alert('Added! Switch to Input Data tab to see it.');
 }
@@ -1135,17 +1199,18 @@ function simulatePrepay() {
   let totalSaved = 0, totalMonthsSaved = 0;
 
   emis.forEach(e => {
+    const remaining = getEmiProgress(e).remaining;
     if (!e.rate) {
       html += `<div class="emi-item"><div class="emi-item-info"><div class="emi-item-icon"><i class="fas ${typeIcons[e.type] || 'fa-money-bill'}"></i></div><div><div class="emi-item-name">${escapeHtml(e.name)}</div><div class="emi-item-details" style="color:var(--muted)">No interest rate — prepayment doesn't save interest</div></div></div></div>`;
       return;
     }
     const r = e.rate / 12 / 100;
-    let bal = calcPrincipalFromEmi(e.amount, e.rate, e.pending);
-    let normalTotal = e.amount * e.pending;
+    let bal = calcPrincipalFromEmi(e.amount, e.rate, remaining);
+    let normalTotal = e.amount * remaining;
 
     // With prepayment
     let bal2 = bal, months2 = 0, total2 = 0;
-    while (bal2 > 0 && months2 < e.pending * 2) {
+    while (bal2 > 0 && months2 < remaining * 2) {
       const intPart = bal2 * r;
       const prinPart = (e.amount + extra) - intPart;
       if (prinPart <= 0) break;
@@ -1154,14 +1219,14 @@ function simulatePrepay() {
       months2++;
     }
     const saved = normalTotal - total2;
-    const monthsSaved = e.pending - months2;
+    const monthsSaved = remaining - months2;
     totalSaved += Math.max(saved, 0);
     totalMonthsSaved += Math.max(monthsSaved, 0);
 
     html += `<div class="emi-item" style="flex-wrap:wrap;gap:12px">
       <div class="emi-item-info"><div class="emi-item-icon"><i class="fas ${typeIcons[e.type] || 'fa-money-bill'}"></i></div>
         <div><div class="emi-item-name">${escapeHtml(e.name)}</div>
-          <div class="emi-item-details">${e.pending} → <strong style="color:var(--good)">${months2} months</strong> · Save <strong style="color:var(--good)">₹${Math.max(saved, 0).toLocaleString('en-IN')}</strong> interest · ${Math.max(monthsSaved, 0)} months earlier</div></div></div>
+          <div class="emi-item-details">${remaining} → <strong style="color:var(--good)">${months2} months</strong> · Save <strong style="color:var(--good)">₹${Math.max(saved, 0).toLocaleString('en-IN')}</strong> interest · ${Math.max(monthsSaved, 0)} months earlier</div></div></div>
     </div>`;
   });
   html += '</div>';
@@ -1181,11 +1246,12 @@ function generateBalanceReduction() {
 
   emis.forEach((e, i) => {
     const schedule = [];
-    let balance = e.amount * e.pending;
+    const remaining = getEmiProgress(e).remaining;
+    let balance = e.amount * remaining;
     const monthlyRate = e.rate ? (e.rate / 12 / 100) : 0;
-    for (let m = 0; m <= e.pending; m++) {
+    for (let m = 0; m <= remaining; m++) {
       schedule.push({ month: m, balance: Math.round(balance) });
-      if (m < e.pending) {
+      if (m < remaining) {
         const interest = Math.round(balance * monthlyRate);
         const principal = e.amount - interest;
         balance = Math.max(balance - principal, 0);
@@ -1195,7 +1261,7 @@ function generateBalanceReduction() {
   });
 
   // Total debt month-by-month
-  const maxMonths = Math.max(...emis.map(e => e.pending));
+  const maxMonths = Math.max(...emis.map(e => getEmiProgress(e).remaining));
   const totalSchedule = [];
   for (let m = 0; m <= maxMonths; m++) {
     let total = 0;
@@ -1224,7 +1290,7 @@ function renderBalanceChart() {
     const pct = Math.max(Math.round((s.balance / maxBal) * 100), 2);
     const ratio = s.balance / maxBal;
     const color = ratio > 0.6 ? 'var(--bad)' : ratio > 0.3 ? 'var(--warn)' : 'var(--good)';
-    const d = new Date(); d.setMonth(d.getMonth() + s.month);
+    const d = new Date(`${getAsOfDate()}T00:00:00`); d.setMonth(d.getMonth() + s.month);
     const label = d.toLocaleString('en-IN', { month: 'short', year: '2-digit' });
     return `<div class="balance-bar-row">
       <div class="mo-label">${label}</div>
@@ -1236,7 +1302,7 @@ function renderBalanceChart() {
   // Balance table
   const tbl = document.getElementById('balanceTable');
   const rows = schedule.map(s => {
-    const d = new Date(); d.setMonth(d.getMonth() + s.month);
+    const d = new Date(`${getAsOfDate()}T00:00:00`); d.setMonth(d.getMonth() + s.month);
     const label = d.toLocaleString('en-IN', { month: 'short', year: 'numeric' });
     const paid = schedule[0].balance - s.balance;
     const paidPct = Math.round((paid / (schedule[0].balance || 1)) * 100);
@@ -1255,7 +1321,7 @@ function renderTotalDebtChart() {
     const pct = Math.max(Math.round((s.balance / maxBal) * 100), 2);
     const ratio = s.balance / maxBal;
     const color = ratio > 0.6 ? '#ef4444' : ratio > 0.3 ? '#f59e0b' : '#10b981';
-    const d = new Date(); d.setMonth(d.getMonth() + s.month);
+    const d = new Date(`${getAsOfDate()}T00:00:00`); d.setMonth(d.getMonth() + s.month);
     const label = d.toLocaleString('en-IN', { month: 'short', year: '2-digit' });
     return `<div class="bar-row">
       <div class="bar-label">${label}</div>
@@ -1274,11 +1340,12 @@ function loadDemoData() {
     { name: 'ICICI Merchant EMI #1', amount: 3605, pending: 8, rate: 14, type: 'credit' },
     { name: 'ICICI Merchant EMI #2', amount: 3155, pending: 3, rate: 14, type: 'credit' }
   ];
-  state = { salary: 55000, otherIncome: 0, expenses: 15000, emergencyFund: 30000 };
+  state = { salary: 55000, otherIncome: 0, expenses: 15000, emergencyFund: 30000, asOfDate: getTodayInputDate() };
   document.getElementById('salary').value = 55000;
   document.getElementById('otherIncome').value = 0;
   document.getElementById('expenses').value = 15000;
   document.getElementById('emergencyFund').value = 30000;
+  document.getElementById('asOfDate').value = state.asOfDate;
   saveState();
   renderEmiList();
 }
